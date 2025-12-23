@@ -53,6 +53,8 @@
 #include "MediaTransControls.h"
 #include "FavoriteOrganizeDlg.h"
 #include "AllocatorCommon.h"
+#include "HardwareDetection.h"
+#include "PerformanceOptimizer.h"
 
 class CDebugShadersDlg;
 class CFullscreenWnd;
@@ -465,6 +467,12 @@ private:
     bool delayingFullScreen;
 
     bool m_bIsMPCVRExclusiveMode = false;
+
+    // Performance optimizers
+    CTimeFormatCache m_timeFormatCache;
+    CWindowTitleCache m_windowTitleCache;
+    CPositionUpdateThrottler m_positionThrottler;
+    REFERENCE_TIME m_rtLastPositionUpdate;  // Cache last position to avoid redundant updates
 
     void SendStatusMessage(CString msg, int nTimeOut);
     CString m_tempstatus_msg, m_closingmsg;

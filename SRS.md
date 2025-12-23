@@ -1,6 +1,6 @@
 # Software Requirements Specification (SRS)
 ## Media Player Classic - Home Cinema (MPC-HC)
-### Version 2.0 - Optimized for Low-End Hardware
+### Version 2.1 - Performance Optimized for All Hardware
 
 ---
 
@@ -525,6 +525,48 @@ STOPPED → PAUSED → RUNNING
 
 ## 6. Performance Optimizations
 
+### 6.0 General CPU Optimizations
+
+#### 6.0.1 Performance Optimizer System
+The application includes a comprehensive performance optimization system (`PerformanceOptimizer`) that reduces CPU usage without changing logic or features:
+
+**Time Format Caching (`CTimeFormatCache`)**
+- Caches formatted time strings to avoid repeated expensive formatting operations
+- Only reformats when time value actually changes
+- Reduces CPU usage in position polling hot path
+
+**Window Title Caching (`CWindowTitleCache`)**
+- Caches window title to avoid unnecessary `SetWindowText` calls
+- Only updates window title when it actually changes
+- Reduces CPU usage from frequent title updates
+
+**Position Update Throttling (`CPositionUpdateThrottler`)**
+- Throttles position updates to avoid redundant UI updates
+- Only updates UI when position changes by significant threshold
+- Reduces CPU usage from excessive seekbar/OSD updates
+
+**String Operation Optimizations**
+- Fast string concatenation with pre-allocated buffers
+- Optimized string formatting functions
+- Reduces memory allocations in hot paths
+
+#### 6.0.2 Hot Path Optimizations
+
+**Position Polling Optimization**
+- Position updates only processed when change exceeds threshold (1 second default)
+- Reduces redundant seekbar/OSD updates during playback
+- Maintains smooth UI while reducing CPU usage
+
+**Window Title Update Optimization**
+- Window title only updated when content actually changes
+- Avoids expensive `SetWindowText` calls when title is unchanged
+- Reduces CPU usage from title bar updates
+
+**Time Formatting Optimization**
+- Time strings cached and reused when time value unchanged
+- Expensive formatting operations only performed when necessary
+- Reduces CPU usage in status bar and OSD updates
+
 ### 6.1 Hardware Detection System
 
 #### 6.1.1 Detection Process
@@ -895,6 +937,7 @@ Users can override automatic optimizations:
 
 ## Document Version History
 
+- **v2.1** (2024): Added comprehensive CPU performance optimizations for all hardware
 - **v2.0** (2024): Added hardware detection and low-end optimization documentation
 - **v1.0**: Initial SRS document
 

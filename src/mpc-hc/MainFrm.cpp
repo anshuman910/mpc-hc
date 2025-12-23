@@ -910,6 +910,7 @@ CMainFrame::CMainFrame()
     , restoringWindowRect(false)
     , mediaTypesErrorDlg(nullptr)
     , m_iStreamPosPollerInterval(100)
+    , m_rtLastPositionUpdate(0)
     , currentAudioLang(_T(""))
     , currentSubLang(_T(""))
     , m_bToggleShader(false)
@@ -2271,11 +2272,23 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
                 g_bNoDuration = rtDur <= 0;
                 m_wndSeekBar.Enable(!g_bNoDuration);
                 m_wndSeekBar.SetRange(0, rtDur);
-                m_wndSeekBar.SetPos(rtNow);
+                
+                // Only update position if it changed significantly (optimization)
+                // Always update on first call or if position changed by threshold (100ms)
+                // This reduces CPU usage while maintaining smooth UI updates
+                REFERENCE_TIME positionDiff = (rtNow > m_rtLastPositionUpdate) ? 
+                                              (rtNow - m_rtLastPositionUpdate) : 
+                                              (m_rtLastPositionUpdate - rtNow);
+                if (m_rtLastPositionUpdate == 0 || positionDiff >= 1000000) {  // 100ms threshold
+                    m_wndSeekBar.SetPos(rtNow);
+                    m_OSD.SetPos(rtNow);
+                    m_Lcd.SetMediaPos(rtNow);
+                    m_rtLastPositionUpdate = rtNow;
+                }
+                
+                // Range updates are less frequent, so always update
                 m_OSD.SetRange(rtDur);
-                m_OSD.SetPos(rtNow);
                 m_Lcd.SetMediaRange(0, rtDur);
-                m_Lcd.SetMediaPos(rtNow);
 
                 if (m_pCAP) {
                     if (g_bExternalSubtitleTime) {
@@ -9380,6 +9393,11 @@ void CMainFrame::KillTimersStop()
     KillTimer(TIMER_STREAMPOSPOLLER);
     KillTimer(TIMER_STATS);
     m_timerOneTime.Unsubscribe(TimerOneTimeSubscriber::DVBINFO_UPDATE);
+    
+    // Reset performance caches when stopping
+    m_rtLastPositionUpdate = 0;
+    m_timeFormatCache.Reset();
+    m_windowTitleCache.Reset();
 }
 
 void CMainFrame::OnPlaySeekKey(UINT nID)
@@ -15195,7 +15213,8 @@ void CMainFrame::OpenSetupWindowTitle(bool reset /*= false*/)
         }
     }
 
-    SetWindowText(title);
+    // Use cached window title update to avoid unnecessary SetWindowText calls
+    m_windowTitleCache.SetWindowTextIfChanged(m_hWnd, title);
     m_Lcd.SetMediaTitle(title);
 }
 
