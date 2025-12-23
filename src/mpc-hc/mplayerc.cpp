@@ -24,6 +24,7 @@
 #include "AboutDlg.h"
 #include "CmdLineHelpDlg.h"
 #include "CrashReporter.h"
+#include "HardwareDetection.h"
 #include "DSUtil.h"
 #include "FakeFilterMapper2.h"
 #include "FileAssoc.h"
@@ -2211,6 +2212,9 @@ BOOL CMPlayerCApp::InitInstance()
 
     m_s->UpdateSettings(); // update settings
     m_s->LoadSettings(); // read settings
+
+    // Initialize hardware detection for optimization
+    CHardwareDetection::Initialize();
 
     #if !defined(_DEBUG) && USE_DRDUMP_CRASH_REPORTER
     if (!m_s->bEnableCrashReporter) {

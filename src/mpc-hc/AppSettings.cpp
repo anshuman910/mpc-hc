@@ -32,6 +32,7 @@
 #include "WinAPIUtils.h"
 #include "moreuuids.h"
 #include "mplayerc.h"
+#include "HardwareDetection.h"
 #include "../thirdparty/sanear/src/Factory.h"
 #include <VersionHelpersInternal.h>
 #include <mvrInterfaces.h>
@@ -257,7 +258,7 @@ CAppSettings::CAppSettings()
     , bSnapShotSubtitles(true)
     , bSnapShotKeepVideoExtension(true)
     , bEnableCrashReporter(true)
-    , nStreamPosPollerInterval(100)
+    , nStreamPosPollerInterval(100)  // Will be adjusted by hardware detection
     , bShowLangInStatusbar(false)
     , bShowFPSInStatusbar(false)
     , bShowABMarksInStatusbar(false)
@@ -2075,6 +2076,16 @@ void CAppSettings::LoadSettings()
     fHideCDROMsSubMenu = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_HIDECDROMSSUBMENU, FALSE);
 
     dwPriority = pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_PRIORITY, NORMAL_PRIORITY_CLASS);
+    
+    // Override with hardware-detected optimal priority if not explicitly set
+    // Only override if using default (NORMAL_PRIORITY_CLASS)
+    if (dwPriority == NORMAL_PRIORITY_CLASS) {
+        DWORD recommendedPriority = CHardwareDetection::GetRecommendedPriorityClass();
+        if (recommendedPriority != NORMAL_PRIORITY_CLASS) {
+            dwPriority = recommendedPriority;
+        }
+    }
+    
     ::SetPriorityClass(::GetCurrentProcess(), dwPriority);
     fLaunchfullscreen = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_LAUNCHFULLSCREEN, FALSE);
 
@@ -2301,6 +2312,15 @@ void CAppSettings::LoadSettings()
     bEnableCrashReporter = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_ENABLE_CRASH_REPORTER, TRUE);
 
     nStreamPosPollerInterval = pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_TIME_REFRESH_INTERVAL, 100);
+    
+    // Optimize for low-end hardware if not explicitly configured
+    if (nStreamPosPollerInterval == 100) {
+        // Hardware detection will be initialized by now
+        int recommended = CHardwareDetection::GetRecommendedStreamPosPollerInterval();
+        if (recommended != 100) {
+            nStreamPosPollerInterval = recommended;
+        }
+    }
     bShowLangInStatusbar = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_SHOW_LANG_STATUSBAR, FALSE);
     bShowFPSInStatusbar = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_SHOW_FPS_STATUSBAR, FALSE);
     bShowABMarksInStatusbar = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_SHOW_ABMARKS_STATUSBAR, FALSE);

@@ -23,6 +23,7 @@
 #include "MainFrm.h"
 #include "mplayerc.h"
 #include "version.h"
+#include "HardwareDetection.h"
 
 #include "GraphThread.h"
 #include "FGFilterLAV.h"
@@ -9343,7 +9344,11 @@ void CMainFrame::AdjustStreamPosPoller(bool restart)
     if (g_bExternalSubtitleTime || IsSubresyncBarVisible()) {
         m_iStreamPosPollerInterval = 40;
     } else {
-        m_iStreamPosPollerInterval = AfxGetAppSettings().nStreamPosPollerInterval;
+        // Use hardware-optimized interval if available
+        int recommended = CHardwareDetection::GetRecommendedStreamPosPollerInterval();
+        int configured = AfxGetAppSettings().nStreamPosPollerInterval;
+        // Use the larger (slower) interval for low-end hardware
+        m_iStreamPosPollerInterval = (recommended > configured) ? recommended : configured;
     }
 
     if (restart && current_value != m_iStreamPosPollerInterval) {
